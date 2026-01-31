@@ -6,7 +6,8 @@ use axum::{
     http::{request::Parts, StatusCode},
 };
 use mongodb::bson::oid::ObjectId;
-use std::str::FromStr;
+use std::future::Future;
+use std::pin::Pin;
 
 use crate::config;
 
@@ -32,11 +33,22 @@ where
 {
     type Rejection = StatusCode;
 
-    async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
+    fn from_request_parts<'life0, 'life1, 'async_trait>(
+        parts: &'life0 mut Parts,
+        _state: &'life1 S,
+    ) -> Pin<Box<dyn Future<Output = Result<Self, Self::Rejection>> + Send + 'async_trait>>
+    where
+        'life0: 'async_trait,
+        'life1: 'async_trait,
+        Self: 'async_trait,
+    {
         let header_value = parts
             .headers
             .get("x-user-id")
-            .and_then(|v| v.to_str().ok());
-        UserContext::from_header_or_default(header_value)
+            .and_then(|v| v.to_str().ok())
+            .map(|s| s.to_string());
+        Box::pin(std::future::ready(UserContext::from_header_or_default(
+            header_value.as_deref(),
+        )))
     }
 }

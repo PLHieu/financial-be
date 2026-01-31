@@ -13,7 +13,6 @@ pub async fn create(db: &Database, transaction: Transaction) -> Result<ObjectId,
     res.inserted_id
         .as_object_id()
         .ok_or_else(|| "missing inserted id".to_string())
-        .map(|id| *id)
 }
 
 pub async fn get_by_asset(db: &Database, user_id: ObjectId, asset_id: ObjectId) -> Result<Vec<Transaction>, String> {
@@ -34,13 +33,14 @@ pub async fn get_by_asset(db: &Database, user_id: ObjectId, asset_id: ObjectId) 
 
 pub async fn get_all(db: &Database, user_id: ObjectId, limit: Option<u64>) -> Result<Vec<Transaction>, String> {
     let coll = db.collection::<mongodb::bson::Document>("transactions");
-    let mut opts = mongodb::options::FindOptions::default();
-    opts.sort = Some(doc! { "date": -1, "created_at": -1 });
-    opts.limit = limit;
-    let mut cursor = coll
-        .find_with_options(doc! { "user_id": user_id }, opts)
-        .await
-        .map_err(|e| e.to_string())?;
+    let cursor_builder = coll
+        .find(doc! { "user_id": user_id })
+        .sort(doc! { "date": -1, "created_at": -1 });
+    let mut cursor = match limit {
+        Some(l) => cursor_builder.limit(l as i64).await,
+        None => cursor_builder.await,
+    }
+    .map_err(|e| e.to_string())?;
     let mut out = Vec::new();
     while cursor.advance().await.map_err(|e| e.to_string())? {
         let doc = cursor.deserialize_current().map_err(|e| e.to_string())?;

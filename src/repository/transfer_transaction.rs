@@ -13,7 +13,6 @@ pub async fn create(db: &Database, transfer: TransferTransaction) -> Result<Obje
     res.inserted_id
         .as_object_id()
         .ok_or_else(|| "missing inserted id".to_string())
-        .map(|id| *id)
 }
 
 pub async fn get_all(

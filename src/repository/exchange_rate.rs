@@ -13,7 +13,6 @@ pub async fn create(db: &Database, rate: ExchangeRate) -> Result<ObjectId, Strin
     res.inserted_id
         .as_object_id()
         .ok_or_else(|| "missing inserted id".to_string())
-        .map(|id| *id)
 }
 
 pub async fn upsert(db: &Database, rate: ExchangeRate) -> Result<ObjectId, String> {
@@ -28,13 +27,13 @@ pub async fn upsert(db: &Database, rate: ExchangeRate) -> Result<ObjectId, Strin
     let opts = mongodb::options::UpdateOptions::builder()
         .upsert(true)
         .build();
-    let res = coll.update_one(filter, update).with_options(opts).await.map_err(|e| e.to_string())?;
-    if let Some(id) = res.upserted_id.and_then(|v| v.as_object_id().copied()) {
+    let res = coll.update_one(filter.clone(), update).with_options(opts).await.map_err(|e| e.to_string())?;
+    if let Some(id) = res.upserted_id.and_then(|v| v.as_object_id()) {
         Ok(id)
     } else {
         let existing = coll.find_one(filter).await.map_err(|e| e.to_string())?;
         existing
-            .and_then(|d| d.get_object_id("_id").ok().copied())
+            .and_then(|d| d.get_object_id("_id").ok())
             .ok_or_else(|| "missing id after upsert".to_string())
     }
 }

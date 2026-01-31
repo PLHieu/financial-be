@@ -51,7 +51,7 @@ pub async fn get(
     Path(id): Path<String>,
 ) -> Result<Json<crate::models::PortfolioDto>, StatusCode> {
     let oid = ObjectId::parse_str(&id).map_err(|_| StatusCode::BAD_REQUEST)?;
-    let p = repository::get_by_id(&state.db, ctx.user_id, oid)
+    let p = repository::portfolio::get_by_id(&state.db, ctx.user_id, oid)
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
         .ok_or(StatusCode::NOT_FOUND)?;

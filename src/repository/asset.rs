@@ -13,7 +13,6 @@ pub async fn create(db: &Database, asset: Asset) -> Result<ObjectId, String> {
     res.inserted_id
         .as_object_id()
         .ok_or_else(|| "missing inserted id".to_string())
-        .map(|id| *id)
 }
 
 pub async fn get_by_portfolio(db: &Database, user_id: ObjectId, portfolio_id: ObjectId) -> Result<Vec<Asset>, String> {

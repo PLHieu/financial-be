@@ -33,6 +33,21 @@ Backend for the Financial app: **Rust + MongoDB**, multi-tenant ready. All data 
 
    Response: `OK`
 
+## Run with Docker
+
+From the `financial-be` directory:
+
+```bash
+docker compose up --build
+```
+
+(or `docker-compose up --build` if you use the older CLI). This starts MongoDB and the API. Then open:
+
+- **Health:** http://localhost:3001/health  
+- **API:** http://localhost:3001/api/...
+
+Optional: copy `.env.example` to `.env` and set variables; the API service will load them via `env_file: .env`.
+
 ## API base and auth
 
 - **Base URL:** `http://localhost:3001/api`

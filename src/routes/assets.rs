@@ -18,7 +18,7 @@ pub async fn list_by_portfolio(
     Path(portfolio_id): Path<String>,
 ) -> Result<Json<Vec<crate::models::AssetDto>>, StatusCode> {
     let pid = ObjectId::parse_str(&portfolio_id).map_err(|_| StatusCode::BAD_REQUEST)?;
-    let list = repository::get_by_portfolio(&state.db, ctx.user_id, pid)
+    let list = repository::asset::get_by_portfolio(&state.db, ctx.user_id, pid)
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     let dtos: Vec<_> = list.iter().map(dto::asset_to_dto).collect();

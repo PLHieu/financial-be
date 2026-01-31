@@ -13,7 +13,6 @@ pub async fn create(db: &Database, portfolio: Portfolio) -> Result<ObjectId, Str
     res.inserted_id
         .as_object_id()
         .ok_or_else(|| "missing inserted id".to_string())
-        .map(|id| *id)
 }
 
 pub async fn get_all(db: &Database, user_id: ObjectId) -> Result<Vec<Portfolio>, String> {

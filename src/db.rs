@@ -2,7 +2,7 @@
 
 use mongodb::{
     bson::doc,
-    options::{IndexOptions, CreateIndexOptions},
+    options::{IndexOptions},
     Client, Database, IndexModel,
 };
 use std::sync::Arc;
@@ -20,7 +20,6 @@ pub async fn create_indexes(db: &Database) -> Result<(), mongodb::error::Error> 
     db.collection::<mongodb::bson::Document>("portfolios")
         .create_index(
             IndexModel::builder().keys(doc! { "user_id": 1 }).build(),
-            CreateIndexOptions::builder().build(),
         )
         .await?;
 
@@ -28,13 +27,11 @@ pub async fn create_indexes(db: &Database) -> Result<(), mongodb::error::Error> 
     db.collection::<mongodb::bson::Document>("assets")
         .create_index(
             IndexModel::builder().keys(doc! { "user_id": 1 }).build(),
-            CreateIndexOptions::builder().build(),
         )
         .await?;
     db.collection::<mongodb::bson::Document>("assets")
         .create_index(
             IndexModel::builder().keys(doc! { "portfolio_id": 1 }).build(),
-            CreateIndexOptions::builder().build(),
         )
         .await?;
 
@@ -42,13 +39,11 @@ pub async fn create_indexes(db: &Database) -> Result<(), mongodb::error::Error> 
     db.collection::<mongodb::bson::Document>("transactions")
         .create_index(
             IndexModel::builder().keys(doc! { "user_id": 1 }).build(),
-            CreateIndexOptions::builder().build(),
         )
         .await?;
     db.collection::<mongodb::bson::Document>("transactions")
         .create_index(
             IndexModel::builder().keys(doc! { "asset_id": 1 }).build(),
-            CreateIndexOptions::builder().build(),
         )
         .await?;
 
@@ -59,7 +54,6 @@ pub async fn create_indexes(db: &Database) -> Result<(), mongodb::error::Error> 
                 .keys(doc! { "user_id": 1, "date": 1 })
                 .options(IndexOptions::builder().unique(true).build())
                 .build(),
-            CreateIndexOptions::builder().build(),
         )
         .await?;
 
@@ -70,7 +64,6 @@ pub async fn create_indexes(db: &Database) -> Result<(), mongodb::error::Error> 
                 .keys(doc! { "user_id": 1, "date": 1, "portfolio_id": 1 })
                 .options(IndexOptions::builder().unique(true).build())
                 .build(),
-            CreateIndexOptions::builder().build(),
         )
         .await?;
     db.collection::<mongodb::bson::Document>("portfolio_snapshots")
@@ -78,7 +71,6 @@ pub async fn create_indexes(db: &Database) -> Result<(), mongodb::error::Error> 
             IndexModel::builder()
                 .keys(doc! { "user_id": 1, "portfolio_id": 1, "date": 1 })
                 .build(),
-            CreateIndexOptions::builder().build(),
         )
         .await?;
 
@@ -89,7 +81,6 @@ pub async fn create_indexes(db: &Database) -> Result<(), mongodb::error::Error> 
                 .keys(doc! { "asset_id": 1, "date": 1 })
                 .options(IndexOptions::builder().unique(true).build())
                 .build(),
-            CreateIndexOptions::builder().build(),
         )
         .await?;
 
@@ -97,7 +88,6 @@ pub async fn create_indexes(db: &Database) -> Result<(), mongodb::error::Error> 
     db.collection::<mongodb::bson::Document>("transfer_transactions")
         .create_index(
             IndexModel::builder().keys(doc! { "user_id": 1 }).build(),
-            CreateIndexOptions::builder().build(),
         )
         .await?;
     db.collection::<mongodb::bson::Document>("transfer_transactions")
@@ -105,7 +95,6 @@ pub async fn create_indexes(db: &Database) -> Result<(), mongodb::error::Error> 
             IndexModel::builder()
                 .keys(doc! { "from_portfolio_id": 1, "date": 1 })
                 .build(),
-            CreateIndexOptions::builder().build(),
         )
         .await?;
     db.collection::<mongodb::bson::Document>("transfer_transactions")
@@ -113,7 +102,6 @@ pub async fn create_indexes(db: &Database) -> Result<(), mongodb::error::Error> 
             IndexModel::builder()
                 .keys(doc! { "to_portfolio_id": 1, "date": 1 })
                 .build(),
-            CreateIndexOptions::builder().build(),
         )
         .await?;
 
@@ -124,13 +112,11 @@ pub async fn create_indexes(db: &Database) -> Result<(), mongodb::error::Error> 
                 .keys(doc! { "from_currency": 1, "to_currency": 1, "date": 1 })
                 .options(IndexOptions::builder().unique(true).build())
                 .build(),
-            CreateIndexOptions::builder().build(),
         )
         .await?;
     db.collection::<mongodb::bson::Document>("exchange_rates")
         .create_index(
             IndexModel::builder().keys(doc! { "date": 1 }).build(),
-            CreateIndexOptions::builder().build(),
         )
         .await?;
 
