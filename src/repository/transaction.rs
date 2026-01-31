@@ -1,0 +1,51 @@
+use mongodb::{
+    bson::{doc, from_document, to_document},
+    Database,
+};
+use mongodb::bson::oid::ObjectId;
+
+use crate::models::Transaction;
+
+pub async fn create(db: &Database, transaction: Transaction) -> Result<ObjectId, String> {
+    let coll = db.collection::<mongodb::bson::Document>("transactions");
+    let doc = to_document(&transaction).map_err(|e| e.to_string())?;
+    let res = coll.insert_one(doc).await.map_err(|e| e.to_string())?;
+    res.inserted_id
+        .as_object_id()
+        .ok_or_else(|| "missing inserted id".to_string())
+        .map(|id| *id)
+}
+
+pub async fn get_by_asset(db: &Database, user_id: ObjectId, asset_id: ObjectId) -> Result<Vec<Transaction>, String> {
+    let coll = db.collection::<mongodb::bson::Document>("transactions");
+    let mut cursor = coll
+        .find(doc! { "user_id": user_id, "asset_id": asset_id })
+        .sort(doc! { "date": -1, "created_at": -1 })
+        .await
+        .map_err(|e| e.to_string())?;
+    let mut out = Vec::new();
+    while cursor.advance().await.map_err(|e| e.to_string())? {
+        let doc = cursor.deserialize_current().map_err(|e| e.to_string())?;
+        let t: Transaction = from_document(doc).map_err(|e| e.to_string())?;
+        out.push(t);
+    }
+    Ok(out)
+}
+
+pub async fn get_all(db: &Database, user_id: ObjectId, limit: Option<u64>) -> Result<Vec<Transaction>, String> {
+    let coll = db.collection::<mongodb::bson::Document>("transactions");
+    let mut opts = mongodb::options::FindOptions::default();
+    opts.sort = Some(doc! { "date": -1, "created_at": -1 });
+    opts.limit = limit;
+    let mut cursor = coll
+        .find_with_options(doc! { "user_id": user_id }, opts)
+        .await
+        .map_err(|e| e.to_string())?;
+    let mut out = Vec::new();
+    while cursor.advance().await.map_err(|e| e.to_string())? {
+        let doc = cursor.deserialize_current().map_err(|e| e.to_string())?;
+        let t: Transaction = from_document(doc).map_err(|e| e.to_string())?;
+        out.push(t);
+    }
+    Ok(out)
+}
