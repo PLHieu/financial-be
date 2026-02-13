@@ -1,0 +1,283 @@
+{
+  "info": {
+    "name": "financial-be API",
+    "description": "Financial app backend - Rust + MongoDB",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3001" },
+    { "key": "portfolioId", "value": "" },
+    { "key": "assetId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/health"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Portfolios",
+      "item": [
+        {
+          "name": "List portfolios",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/portfolios"
+          }
+        },
+        {
+          "name": "Create portfolio",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"My Portfolio\",\n  \"type\": \"Investment\",\n  \"baseCurrency\": \"VND\",\n  \"description\": null,\n  \"color\": \"#136dec\"\n}"
+            },
+            "url": "{{baseUrl}}/api/portfolios"
+          }
+        },
+        {
+          "name": "Get portfolio",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/portfolios/{{portfolioId}}"
+          }
+        },
+        {
+          "name": "Update portfolio",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Name\",\n  \"type\": \"Investment\",\n  \"baseCurrency\": \"VND\",\n  \"description\": null,\n  \"color\": null\n}"
+            },
+            "url": "{{baseUrl}}/api/portfolios/{{portfolioId}}"
+          }
+        },
+        {
+          "name": "Delete portfolio",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/api/portfolios/{{portfolioId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Assets",
+      "item": [
+        {
+          "name": "List assets by portfolio",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/portfolios/{{portfolioId}}/assets"
+          }
+        },
+        {
+          "name": "Create asset",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"portfolioId\": \"{{portfolioId}}\",\n  \"name\": \"BTC\",\n  \"type\": \"Crypto\",\n  \"currency\": \"USD\",\n  \"status\": \"Active\",\n  \"metadata\": { \"symbol\": \"BTCUSD\" }\n}"
+            },
+            "url": "{{baseUrl}}/api/portfolios/{{portfolioId}}/assets"
+          }
+        },
+        {
+          "name": "Get asset",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/assets/{{assetId}}"
+          }
+        },
+        {
+          "name": "Update asset status",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"Closed\"\n}"
+            },
+            "url": "{{baseUrl}}/api/assets/{{assetId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Transactions",
+      "item": [
+        {
+          "name": "List transactions by asset",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/assets/{{assetId}}/transactions"
+          }
+        },
+        {
+          "name": "Create transaction",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"assetId\": \"{{assetId}}\",\n  \"type\": \"Buy\",\n  \"amount\": 1000,\n  \"price\": 50000,\n  \"quantity\": 0.02,\n  \"note\": null,\n  \"date\": \"2025-01-15T00:00:00Z\"\n}"
+            },
+            "url": "{{baseUrl}}/api/assets/{{assetId}}/transactions"
+          }
+        },
+        {
+          "name": "List all transactions",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/transactions?limit=50"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Net worth snapshots",
+      "item": [
+        {
+          "name": "Upsert net worth snapshot",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"date\": \"2025-01-15\",\n  \"totalNetWorth\": 100000000\n}"
+            },
+            "url": "{{baseUrl}}/api/net-worth-snapshots"
+          }
+        },
+        {
+          "name": "List net worth snapshots",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/net-worth-snapshots?time_range=1M"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Portfolio snapshots",
+      "item": [
+        {
+          "name": "Upsert portfolio snapshot",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"date\": \"2025-01-15\",\n  \"portfolioId\": \"{{portfolioId}}\",\n  \"totalValue\": 50000000\n}"
+            },
+            "url": "{{baseUrl}}/api/portfolio-snapshots"
+          }
+        },
+        {
+          "name": "List portfolio snapshots",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/portfolio-snapshots?time_range=1M&portfolio_id={{portfolioId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Asset price history",
+      "item": [
+        {
+          "name": "Upsert asset price",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"assetId\": \"{{assetId}}\",\n  \"date\": \"2025-01-15\",\n  \"price\": 50000,\n  \"currency\": \"USD\"\n}"
+            },
+            "url": "{{baseUrl}}/api/asset-price-history"
+          }
+        },
+        {
+          "name": "List asset price history",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/assets/{{assetId}}/price-history?time_range=1M"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Transfer transactions",
+      "item": [
+        {
+          "name": "List transfer transactions",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/transfer-transactions"
+          }
+        },
+        {
+          "name": "Create transfer",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fromPortfolioId\": \"<from_portfolio_id>\",\n  \"toPortfolioId\": \"<to_portfolio_id>\",\n  \"amount\": 1000000,\n  \"fromCurrency\": \"VND\",\n  \"toCurrency\": \"USD\",\n  \"date\": \"2025-01-15T00:00:00Z\",\n  \"note\": null\n}"
+            },
+            "url": "{{baseUrl}}/api/transfer-transactions"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Exchange rates",
+      "item": [
+        {
+          "name": "List exchange rates",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/exchange-rates?date=2025-01-15&from_currency=VND&to_currency=USD"
+          }
+        },
+        {
+          "name": "Create exchange rate",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fromCurrency\": \"VND\",\n  \"toCurrency\": \"USD\",\n  \"rate\": 0.00004,\n  \"date\": \"2025-01-15T00:00:00Z\",\n  \"source\": \"manual\"\n}"
+            },
+            "url": "{{baseUrl}}/api/exchange-rates"
+          }
+        }
+      ]
+    }
+  ]
+}

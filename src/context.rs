@@ -3,13 +3,14 @@
 
 use axum::{
     extract::FromRequestParts,
-    http::{request::Parts, StatusCode},
+    http::request::Parts,
 };
 use mongodb::bson::oid::ObjectId;
 use std::future::Future;
 use std::pin::Pin;
 
 use crate::config;
+use crate::error::AppError;
 
 #[derive(Clone)]
 pub struct UserContext {
@@ -17,11 +18,11 @@ pub struct UserContext {
 }
 
 impl UserContext {
-    pub fn from_header_or_default(header_value: Option<&str>) -> Result<Self, StatusCode> {
+    pub fn from_header_or_default(header_value: Option<&str>) -> Result<Self, AppError> {
         let oid = match header_value {
-            Some(h) => ObjectId::parse_str(h.trim()).map_err(|_| StatusCode::BAD_REQUEST)?,
+            Some(h) => ObjectId::parse_str(h.trim()).map_err(|_| AppError::bad_request())?,
             None => ObjectId::parse_str(config::default_user_id_hex().as_str())
-                .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?,
+                .map_err(|e| AppError::internal(format!("default user id invalid: {}", e)))?,
         };
         Ok(UserContext { user_id: oid })
     }
@@ -31,7 +32,7 @@ impl<S> FromRequestParts<S> for UserContext
 where
     S: Send + Sync,
 {
-    type Rejection = StatusCode;
+    type Rejection = AppError;
 
     fn from_request_parts<'life0, 'life1, 'async_trait>(
         parts: &'life0 mut Parts,

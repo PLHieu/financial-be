@@ -1,10 +1,10 @@
 use mongodb::{
-    bson::{doc, from_document, to_document},
+    bson::{doc, from_document, to_document, Bson},
     Database,
 };
 use mongodb::bson::oid::ObjectId;
 
-use crate::models::Asset;
+use crate::models::{Asset, AssetMetadata, AssetStatus, AssetType, Currency};
 
 pub async fn create(db: &Database, asset: Asset) -> Result<ObjectId, String> {
     let coll = db.collection::<mongodb::bson::Document>("assets");
@@ -15,11 +15,20 @@ pub async fn create(db: &Database, asset: Asset) -> Result<ObjectId, String> {
         .ok_or_else(|| "missing inserted id".to_string())
 }
 
+/// Returns assets available for this portfolio: global (portfolio_id null) + scoped to this portfolio.
 pub async fn get_by_portfolio(db: &Database, user_id: ObjectId, portfolio_id: ObjectId) -> Result<Vec<Asset>, String> {
     let coll = db.collection::<mongodb::bson::Document>("assets");
+    let filter = doc! {
+        "user_id": user_id,
+        "$or": [
+            { "portfolio_id": Bson::Null },
+            { "portfolio_id": { "$exists": false } },
+            { "portfolio_id": portfolio_id },
+        ],
+    };
     let mut cursor = coll
-        .find(doc! { "user_id": user_id, "portfolio_id": portfolio_id })
-        .sort(doc! { "created_at": -1 })
+        .find(filter)
+        .sort(doc! { "name": 1 })
         .await
         .map_err(|e| e.to_string())?;
     let mut out = Vec::new();
@@ -74,6 +83,46 @@ pub async fn update_status(
         .update_one(
             doc! { "_id": id, "user_id": user_id },
             doc! { "$set": { "status": status, "updated_at": updated_at } },
+        )
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(res.modified_count > 0)
+}
+
+pub async fn update(
+    db: &Database,
+    user_id: ObjectId,
+    id: ObjectId,
+    name: &str,
+    r#type: &AssetType,
+    currency: &Currency,
+    status: &AssetStatus,
+    metadata: Option<&AssetMetadata>,
+    updated_at: mongodb::bson::DateTime,
+) -> Result<bool, String> {
+    use mongodb::bson::Bson;
+    let coll = db.collection::<mongodb::bson::Document>("assets");
+    let type_bson = mongodb::bson::to_bson(r#type).map_err(|e| e.to_string())?;
+    let currency_bson = mongodb::bson::to_bson(currency).map_err(|e| e.to_string())?;
+    let status_bson = mongodb::bson::to_bson(status).map_err(|e| e.to_string())?;
+    let metadata_bson: Option<Bson> = metadata
+        .and_then(|m| to_document(m).ok())
+        .map(Bson::Document);
+    let mut set = doc! {
+        "name": name,
+        "type": type_bson,
+        "currency": currency_bson,
+        "status": status_bson,
+        "updated_at": updated_at,
+    };
+    set.insert(
+        "metadata",
+        metadata_bson.unwrap_or(Bson::Null),
+    );
+    let res = coll
+        .update_one(
+            doc! { "_id": id, "user_id": user_id },
+            doc! { "$set": set },
         )
         .await
         .map_err(|e| e.to_string())?;

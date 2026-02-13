@@ -7,6 +7,7 @@ use mongodb::bson::oid::ObjectId;
 
 use crate::context::UserContext;
 use crate::convert;
+use crate::error::AppError;
 use crate::models::{PortfolioSnapshot, UpsertPortfolioSnapshotRequest};
 use crate::repository;
 use crate::routes::dto;
@@ -34,22 +35,23 @@ pub async fn upsert(
     State(state): State<AppState>,
     ctx: UserContext,
     Json(req): Json<UpsertPortfolioSnapshotRequest>,
-) -> Result<Json<crate::models::PortfolioSnapshotDto>, StatusCode> {
-    let date = convert::parse_iso_to_bson(&req.date).map_err(|_| StatusCode::BAD_REQUEST)?;
-    let portfolio_id = ObjectId::parse_str(&req.portfolio_id).map_err(|_| StatusCode::BAD_REQUEST)?;
+) -> Result<Json<crate::models::PortfolioSnapshotDto>, AppError> {
+    let date = convert::parse_iso_to_bson(&req.date).map_err(|_| AppError::bad_request())?;
+    let portfolio_id = ObjectId::parse_str(&req.portfolio_id).map_err(|_| AppError::bad_request())?;
     let now = convert::now_bson();
     let snapshot = PortfolioSnapshot {
         id: None,
         user_id: ctx.user_id,
         date,
         portfolio_id,
+        total_deposit: req.total_deposit,
+        inventory: req.inventory.clone(),
         total_value: req.total_value,
-        pnl: req.pnl,
         created_at: now,
     };
     let _ = repository::portfolio_snapshot::upsert(&state.db, snapshot)
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        .map_err(AppError::internal)?;
     let list = repository::portfolio_snapshot::get_by_time_range(
         &state.db,
         ctx.user_id,
@@ -57,8 +59,8 @@ pub async fn upsert(
         Some(date),
     )
     .await
-    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-    let s = list.into_iter().next().ok_or(StatusCode::INTERNAL_SERVER_ERROR)?;
+    .map_err(AppError::internal)?;
+    let s = list.into_iter().next().ok_or_else(|| AppError::internal("snapshot not found after upsert"))?;
     Ok(Json(dto::portfolio_snapshot_to_dto(&s)))
 }
 
@@ -66,7 +68,7 @@ pub async fn list(
     State(state): State<AppState>,
     ctx: UserContext,
     Query(q): Query<PortfolioSnapshotsQuery>,
-) -> Result<Json<Vec<crate::models::PortfolioSnapshotDto>>, StatusCode> {
+) -> Result<Json<Vec<crate::models::PortfolioSnapshotDto>>, AppError> {
     let portfolio_id = q
         .portfolio_id
         .as_ref()
@@ -74,7 +76,7 @@ pub async fn list(
     let start = q.time_range.as_deref().and_then(start_date_for_time_range);
     let list = repository::portfolio_snapshot::get_by_time_range(&state.db, ctx.user_id, portfolio_id, start)
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        .map_err(AppError::internal)?;
     let dtos: Vec<_> = list.iter().map(dto::portfolio_snapshot_to_dto).collect();
     Ok(Json(dtos))
 }

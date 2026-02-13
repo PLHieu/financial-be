@@ -2,12 +2,12 @@
 
 use crate::convert;
 use crate::models::{
-    Asset, AssetPriceHistory, ExchangeRate, NetWorthSnapshot, Portfolio, PortfolioSnapshot,
-    Transaction, TransferTransaction,
+    Asset, AssetPriceHistory, CoinPriceHistory, ExchangeRate, NetWorthSnapshot, Portfolio,
+    PortfolioSnapshot, Transaction, TransferTransaction,
 };
 use crate::models::{
-    AssetDto, AssetPriceHistoryDto, ExchangeRateDto, NetWorthSnapshotDto, PortfolioDto,
-    PortfolioSnapshotDto, TransactionDto, TransferTransactionDto,
+    AssetDto, AssetPriceHistoryDto, CoinPriceHistoryDto, ExchangeRateDto, NetWorthSnapshotDto,
+    PortfolioDto, PortfolioSnapshotDto, TransactionDto, TransferTransactionDto,
 };
 use crate::models::{AssetStatus, AssetType, Currency, PortfolioType, TransactionType};
 
@@ -22,7 +22,6 @@ fn currency_str(c: &Currency) -> &'static str {
     match c {
         Currency::VND => "VND",
         Currency::USD => "USD",
-        Currency::USDT => "USDT",
     }
 }
 
@@ -68,7 +67,7 @@ pub fn portfolio_to_dto(p: &Portfolio) -> PortfolioDto {
 pub fn asset_to_dto(a: &Asset) -> AssetDto {
     AssetDto {
         id: a.id.as_ref().map(|id| id.to_hex()).unwrap_or_default(),
-        portfolio_id: a.portfolio_id.to_hex(),
+        portfolio_id: a.portfolio_id.map(|id| id.to_hex()),
         name: a.name.clone(),
         r#type: asset_type_str(&a.r#type).to_string(),
         currency: currency_str(&a.currency).to_string(),
@@ -84,6 +83,7 @@ pub fn asset_to_dto(a: &Asset) -> AssetDto {
 pub fn transaction_to_dto(t: &Transaction) -> TransactionDto {
     TransactionDto {
         id: t.id.as_ref().map(|id| id.to_hex()).unwrap_or_default(),
+        portfolio_id: t.portfolio_id.map(|id| id.to_hex()),
         asset_id: t.asset_id.to_hex(),
         r#type: transaction_type_str(&t.r#type).to_string(),
         amount: t.amount,
@@ -110,8 +110,9 @@ pub fn portfolio_snapshot_to_dto(s: &PortfolioSnapshot) -> PortfolioSnapshotDto 
         id: s.id.as_ref().map(|id| id.to_hex()).unwrap_or_default(),
         date: convert::bson_dt_to_rfc3339(&s.date),
         portfolio_id: s.portfolio_id.to_hex(),
+        total_deposit: s.total_deposit,
+        inventory: s.inventory.clone(),
         total_value: s.total_value,
-        pnl: s.pnl,
         created_at: convert::bson_dt_to_rfc3339(&s.created_at),
     }
 }
@@ -151,6 +152,17 @@ pub fn exchange_rate_to_dto(r: &ExchangeRate) -> ExchangeRateDto {
         rate: r.rate,
         date: convert::bson_dt_to_rfc3339(&r.date),
         source: r.source.clone(),
+        created_at: convert::bson_dt_to_rfc3339(&r.created_at),
+    }
+}
+
+pub fn coin_price_history_to_dto(r: &CoinPriceHistory) -> CoinPriceHistoryDto {
+    CoinPriceHistoryDto {
+        id: r.id.as_ref().map(|id| id.to_hex()).unwrap_or_default(),
+        coin_id: r.coin_id.clone(),
+        date: convert::bson_dt_to_rfc3339(&r.date),
+        price: r.price,
+        currency: r.currency.clone(),
         created_at: convert::bson_dt_to_rfc3339(&r.created_at),
     }
 }

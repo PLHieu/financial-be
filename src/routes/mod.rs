@@ -2,10 +2,12 @@ mod dto;
 mod parse;
 mod portfolios;
 mod assets;
+mod predefined_assets;
 mod transactions;
 mod snapshots;
 mod portfolio_snapshots;
 mod asset_price_history;
+mod coin_price_history;
 mod transfer_transactions;
 mod exchange_rates;
 
@@ -23,16 +25,26 @@ pub fn router(state: AppState) -> Router {
             "/portfolios/:id",
             get(portfolios::get).put(portfolios::update).delete(portfolios::delete),
         )
+        .route("/predefined-assets", get(predefined_assets::list))
+        .route("/assets", get(assets::list_all).post(assets::create_global))
         .route(
             "/portfolios/:portfolio_id/assets",
             get(assets::list_by_portfolio).post(assets::create),
         )
-        .route("/assets/:id", get(assets::get).patch(assets::update_status))
+        .route(
+            "/assets/:id",
+            get(assets::get).put(assets::update).patch(assets::update_status),
+        )
+        .route(
+            "/portfolios/:portfolio_id/transactions",
+            get(transactions::list_by_portfolio).post(transactions::create_for_portfolio),
+        )
         .route(
             "/assets/:asset_id/transactions",
             get(transactions::list_by_asset).post(transactions::create),
         )
         .route("/transactions", get(transactions::list_all))
+        .route("/transactions/:id", delete(transactions::delete))
         .route(
             "/net-worth-snapshots",
             get(snapshots::list_net_worth).post(snapshots::upsert_net_worth),
@@ -48,6 +60,14 @@ pub fn router(state: AppState) -> Router {
         .route(
             "/assets/:asset_id/price-history",
             get(asset_price_history::list_by_asset),
+        )
+        .route(
+            "/coin-price-history/fetch",
+            post(coin_price_history::fetch_and_upsert),
+        )
+        .route(
+            "/coin-price-history",
+            get(coin_price_history::list),
         )
         .route(
             "/transfer-transactions",

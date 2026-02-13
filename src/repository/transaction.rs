@@ -31,6 +31,26 @@ pub async fn get_by_asset(db: &Database, user_id: ObjectId, asset_id: ObjectId) 
     Ok(out)
 }
 
+pub async fn get_by_portfolio(
+    db: &Database,
+    user_id: ObjectId,
+    portfolio_id: ObjectId,
+) -> Result<Vec<Transaction>, String> {
+    let coll = db.collection::<mongodb::bson::Document>("transactions");
+    let mut cursor = coll
+        .find(doc! { "user_id": user_id, "portfolio_id": portfolio_id })
+        .sort(doc! { "date": -1, "created_at": -1 })
+        .await
+        .map_err(|e| e.to_string())?;
+    let mut out = Vec::new();
+    while cursor.advance().await.map_err(|e| e.to_string())? {
+        let doc = cursor.deserialize_current().map_err(|e| e.to_string())?;
+        let t: Transaction = from_document(doc).map_err(|e| e.to_string())?;
+        out.push(t);
+    }
+    Ok(out)
+}
+
 pub async fn get_all(db: &Database, user_id: ObjectId, limit: Option<u64>) -> Result<Vec<Transaction>, String> {
     let coll = db.collection::<mongodb::bson::Document>("transactions");
     let cursor_builder = coll
@@ -48,4 +68,13 @@ pub async fn get_all(db: &Database, user_id: ObjectId, limit: Option<u64>) -> Re
         out.push(t);
     }
     Ok(out)
+}
+
+pub async fn delete_by_id(db: &Database, user_id: ObjectId, id: ObjectId) -> Result<bool, String> {
+    let coll = db.collection::<mongodb::bson::Document>("transactions");
+    let res = coll
+        .delete_one(doc! { "_id": id, "user_id": user_id })
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(res.deleted_count > 0)
 }

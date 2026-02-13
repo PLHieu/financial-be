@@ -1,6 +1,8 @@
 mod config;
 mod context;
 mod convert;
+mod error;
+mod cron;
 mod db;
 mod models;
 mod repository;
@@ -29,7 +31,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     db::create_indexes(db.as_ref()).await?;
     tracing::info!("Indexes ensured");
 
-    let state = state::AppState { db };
+    let state = state::AppState { db: db.clone() };
+
+    // Daily cron at 23:59:59 UTC: fetch today's price for CRON_COIN_IDS and upsert to MongoDB
+    if !config::cron_coin_ids().is_empty() {
+        tokio::spawn(cron::cron_loop(db));
+        tracing::info!("Cron: daily price job scheduled (23:59:59 UTC)");
+    }
 
     let cors = CorsLayer::new()
         .allow_origin(Any)

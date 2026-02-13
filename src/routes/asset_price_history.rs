@@ -7,6 +7,7 @@ use mongodb::bson::oid::ObjectId;
 
 use crate::context::UserContext;
 use crate::convert;
+use crate::error::AppError;
 use crate::models::{AssetPriceHistory, UpsertAssetPriceRequest};
 use crate::repository;
 use crate::routes::dto;
@@ -33,13 +34,13 @@ pub async fn upsert(
     State(state): State<AppState>,
     ctx: UserContext,
     Json(req): Json<UpsertAssetPriceRequest>,
-) -> Result<Json<crate::models::AssetPriceHistoryDto>, StatusCode> {
-    let asset_id = ObjectId::parse_str(&req.asset_id).map_err(|_| StatusCode::BAD_REQUEST)?;
+) -> Result<Json<crate::models::AssetPriceHistoryDto>, AppError> {
+    let asset_id = ObjectId::parse_str(&req.asset_id).map_err(|_| AppError::bad_request())?;
     let _ = repository::asset::get_by_id(&state.db, ctx.user_id, asset_id)
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
-        .ok_or(StatusCode::NOT_FOUND)?;
-    let date = convert::parse_iso_to_bson(&req.date).map_err(|_| StatusCode::BAD_REQUEST)?;
+        .map_err(AppError::internal)?
+        .ok_or(AppError::not_found())?;
+    let date = convert::parse_iso_to_bson(&req.date).map_err(|_| AppError::bad_request())?;
     let now = convert::now_bson();
     let record = AssetPriceHistory {
         id: None,
@@ -51,11 +52,11 @@ pub async fn upsert(
     };
     let _ = repository::asset_price_history::upsert(&state.db, record)
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        .map_err(AppError::internal)?;
     let list = repository::asset_price_history::get_by_asset(&state.db, asset_id, Some(date))
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-    let r = list.into_iter().next().ok_or(StatusCode::INTERNAL_SERVER_ERROR)?;
+        .map_err(AppError::internal)?;
+    let r = list.into_iter().next().ok_or_else(|| AppError::internal("record not found after upsert"))?;
     Ok(Json(dto::asset_price_history_to_dto(&r)))
 }
 
@@ -64,16 +65,16 @@ pub async fn list_by_asset(
     ctx: UserContext,
     Path(asset_id): Path<String>,
     Query(q): Query<TimeRangeQuery>,
-) -> Result<Json<Vec<crate::models::AssetPriceHistoryDto>>, StatusCode> {
-    let aid = ObjectId::parse_str(&asset_id).map_err(|_| StatusCode::BAD_REQUEST)?;
+) -> Result<Json<Vec<crate::models::AssetPriceHistoryDto>>, AppError> {
+    let aid = ObjectId::parse_str(&asset_id).map_err(|_| AppError::bad_request())?;
     let _ = repository::asset::get_by_id(&state.db, ctx.user_id, aid)
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
-        .ok_or(StatusCode::NOT_FOUND)?;
+        .map_err(AppError::internal)?
+        .ok_or(AppError::not_found())?;
     let start = q.time_range.as_deref().and_then(start_date_for_time_range);
     let list = repository::asset_price_history::get_by_asset(&state.db, aid, start)
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        .map_err(AppError::internal)?;
     let dtos: Vec<_> = list.iter().map(dto::asset_price_history_to_dto).collect();
     Ok(Json(dtos))
 }

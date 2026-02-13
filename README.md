@@ -76,12 +76,27 @@ Optional: copy `.env.example` to `.env` and set variables; the API service will 
 | GET | `/api/portfolio-snapshots?time_range=&portfolio_id=` | List portfolio snapshots |
 | POST | `/api/asset-price-history` | Upsert asset price |
 | GET | `/api/assets/:asset_id/price-history?time_range=` | List asset price history |
+| POST | `/api/coin-price-history/fetch?coin_id=&currency=` | Fetch CoinGecko history for a coin and upsert into MongoDB |
+| GET | `/api/coin-price-history?coin_id=&currency=` | List stored coin price history for a coin |
 | GET | `/api/transfer-transactions` | List transfer transactions |
 | POST | `/api/transfer-transactions` | Create transfer (base currency only) |
 | GET | `/api/exchange-rates` | List exchange rates |
 | POST | `/api/exchange-rates` | Create exchange rate |
 
 Indexes are created automatically on first run.
+
+## Daily price cron (23:59:59 UTC)
+
+If **CRON_COIN_IDS** is set, a background task runs **once per day at 23:59:59 UTC**. It fetches today’s price for each listed CoinGecko coin and upserts into `coin_price_history` for the default user.
+
+- **CRON_COIN_IDS** – Comma-separated CoinGecko coin IDs (e.g. `bitcoin,ethereum,tether`). If unset or empty, the cron is not started.
+- **CRON_CURRENCY** – Target currency for prices (default `usd`).
+- **COINGECKO_API_BASE** / **COINGECKO_API_KEY** – Same as for the `/api/coin-price-history/fetch` endpoint.
+
+## API examples (Postman / cURL)
+
+- **Postman:** Import [docs/financial-be-postman-collection.json](docs/financial-be-postman-collection.json) in Postman (Import → Upload Files). Set collection variables `baseUrl` (default `http://localhost:3001`), and optionally `portfolioId` / `assetId` after creating resources.
+- **cURL:** See [docs/api-curl-examples.md](docs/api-curl-examples.md) for copy-paste curl commands for every endpoint. Optional header: `X-User-Id: <24-char-hex-ObjectId>`.
 
 ## React Native app
 

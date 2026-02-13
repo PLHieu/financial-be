@@ -9,9 +9,10 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum Currency {
+    #[serde(rename = "VND")]
     VND,
+    #[serde(rename = "USD")]
     USD,
-    USDT,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -47,7 +48,9 @@ pub enum TransactionType {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum AssetStatus {
+    #[serde(rename = "Active", alias = "ACTIVE", alias = "active")]
     Active,
+    #[serde(rename = "Closed", alias = "CLOSED", alias = "closed")]
     Closed,
 }
 
@@ -70,6 +73,9 @@ pub struct Portfolio {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AssetMetadata {
     pub symbol: Option<String>,
+    /// CoinGecko coin id (e.g. "bitcoin") for price scripts. Set when adding predefined crypto.
+    #[serde(rename = "coingeckoId", skip_serializing_if = "Option::is_none")]
+    pub coingecko_id: Option<String>,
     pub apy: Option<f64>,
     pub payout_frequency: Option<String>,
     pub monthly_contribution: Option<f64>,
@@ -89,7 +95,9 @@ pub struct Asset {
     #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
     pub id: Option<ObjectId>,
     pub user_id: ObjectId,
-    pub portfolio_id: ObjectId,
+    /// None = global asset (top-level). Some(pid) = legacy asset scoped to portfolio.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub portfolio_id: Option<ObjectId>,
     pub name: String,
     pub r#type: AssetType,
     pub currency: Currency,
@@ -104,6 +112,9 @@ pub struct Transaction {
     #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
     pub id: Option<ObjectId>,
     pub user_id: ObjectId,
+    /// Portfolio this transaction belongs to (when creating from portfolio context).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub portfolio_id: Option<ObjectId>,
     pub asset_id: ObjectId,
     pub r#type: TransactionType,
     pub amount: f64,
@@ -132,8 +143,14 @@ pub struct PortfolioSnapshot {
     pub user_id: ObjectId,
     pub date: BsonDateTime,
     pub portfolio_id: ObjectId,
+    /// Total deposits (in portfolio base currency) up to this date. For chart: deposit line.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub total_deposit: Option<f64>,
+    /// Inventory at this date: e.g. {"USD": 10.0, "BTC": 0.5, "ETH": 2.0}. For display only.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub inventory: Option<serde_json::Value>,
+    /// Net worth at this date in portfolio base currency. For chart: net worth line.
     pub total_value: f64,
-    pub pnl: f64,
     pub created_at: BsonDateTime,
 }
 
@@ -177,6 +194,19 @@ pub struct ExchangeRate {
     pub created_at: BsonDateTime,
 }
 
+/// Price history by CoinGecko coin id. Used as cache from CoinGecko API.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CoinPriceHistory {
+    #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
+    pub id: Option<ObjectId>,
+    pub user_id: ObjectId,
+    pub coin_id: String,
+    pub date: BsonDateTime,
+    pub price: f64,
+    pub currency: String,
+    pub created_at: BsonDateTime,
+}
+
 // ---------- API DTOs (camelCase, string IDs, date as ISO string) ----------
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -196,7 +226,7 @@ pub struct PortfolioDto {
 #[serde(rename_all = "camelCase")]
 pub struct AssetDto {
     pub id: String,
-    pub portfolio_id: String,
+    pub portfolio_id: Option<String>,
     pub name: String,
     pub r#type: String,
     pub currency: String,
@@ -210,6 +240,7 @@ pub struct AssetDto {
 #[serde(rename_all = "camelCase")]
 pub struct TransactionDto {
     pub id: String,
+    pub portfolio_id: Option<String>,
     pub asset_id: String,
     pub r#type: String,
     pub amount: f64,
@@ -236,8 +267,9 @@ pub struct PortfolioSnapshotDto {
     pub id: String,
     pub date: String,
     pub portfolio_id: String,
+    pub total_deposit: Option<f64>,
+    pub inventory: Option<serde_json::Value>,
     pub total_value: f64,
-    pub pnl: f64,
     pub created_at: String,
 }
 
@@ -280,6 +312,17 @@ pub struct ExchangeRateDto {
     pub created_at: String,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CoinPriceHistoryDto {
+    pub id: String,
+    pub coin_id: String,
+    pub date: String,
+    pub price: f64,
+    pub currency: String,
+    pub created_at: String,
+}
+
 // ---------- Request bodies (no id, no user_id) ----------
 
 #[derive(Debug, Deserialize)]
@@ -303,9 +346,43 @@ pub struct CreateAssetRequest {
     pub metadata: Option<serde_json::Value>,
 }
 
+/// Create global asset (top-level). No portfolio_id.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateGlobalAssetRequest {
+    pub name: String,
+    pub r#type: String,
+    pub currency: String,
+    pub status: Option<String>,
+    pub metadata: Option<serde_json::Value>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateAssetRequest {
+    pub name: String,
+    pub r#type: String,
+    pub currency: String,
+    pub status: Option<String>,
+    pub metadata: Option<serde_json::Value>,
+}
+
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateTransactionRequest {
+    pub asset_id: String,
+    pub r#type: String,
+    pub amount: f64,
+    pub price: Option<f64>,
+    pub quantity: Option<f64>,
+    pub note: Option<String>,
+    pub date: String,
+}
+
+/// Create transaction in a portfolio (select asset from global list). portfolio_id from path.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreatePortfolioTransactionRequest {
     pub asset_id: String,
     pub r#type: String,
     pub amount: f64,
@@ -327,8 +404,9 @@ pub struct UpsertNetWorthSnapshotRequest {
 pub struct UpsertPortfolioSnapshotRequest {
     pub date: String,
     pub portfolio_id: String,
+    pub total_deposit: Option<f64>,
+    pub inventory: Option<serde_json::Value>,
     pub total_value: f64,
-    pub pnl: f64,
 }
 
 #[derive(Debug, Deserialize)]

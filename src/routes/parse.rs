@@ -14,7 +14,6 @@ pub fn parse_currency(s: &str) -> Result<Currency, &'static str> {
     match s {
         "VND" => Ok(Currency::VND),
         "USD" => Ok(Currency::USD),
-        "USDT" => Ok(Currency::USDT),
         _ => Err("invalid currency"),
     }
 }
