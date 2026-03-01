@@ -128,3 +128,12 @@ pub async fn update(
         .map_err(|e| e.to_string())?;
     Ok(res.modified_count > 0)
 }
+
+pub async fn delete(db: &Database, user_id: ObjectId, id: ObjectId) -> Result<bool, String> {
+    let coll = db.collection::<mongodb::bson::Document>("assets");
+    let res = coll
+        .delete_one(doc! { "_id": id, "user_id": user_id })
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(res.deleted_count > 0)
+}

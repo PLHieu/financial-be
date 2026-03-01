@@ -58,7 +58,7 @@ load_env()
 
 MONGODB_URI = os.environ.get("MONGODB_URI", "mongodb://localhost:27017").strip()
 DEFAULT_USER_ID_HEX = os.environ.get("DEFAULT_USER_ID", "000000000000000000000001").strip()
-COINGECKO_BASE = os.environ.get("COINGECKO_API_BASE", "https://pro-api.coingecko.com/api/v3").strip().rstrip("/")
+COINGECKO_BASE = os.environ.get("COINGECKO_API_BASE", "https://api.coingecko.com/api/v3").strip().rstrip("/")
 COINGECKO_KEY = os.environ.get("COINGECKO_API_KEY", "").strip()
 
 DB_NAME = "financial"
@@ -85,7 +85,7 @@ def fetch_market_chart(coin_id: str, currency: str, days: int) -> list[tuple[dat
     path = f"{COINGECKO_BASE}/coins/{coin_id}/market_chart"
     params = {"vs_currency": currency, "days": str(days)}
     if COINGECKO_KEY:
-        params["x_cg_pro_api_key"] = COINGECKO_KEY
+        params["x_cg_demo_api_key"] = COINGECKO_KEY
     r = requests.get(path, params=params, headers={"User-Agent": "financial-be/1.0"}, timeout=60)
     r.raise_for_status()
     data = r.json()

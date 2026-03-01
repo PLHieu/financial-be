@@ -202,3 +202,27 @@ pub async fn update_status(
         .ok_or(AppError::not_found())?;
     Ok(Json(dto::asset_to_dto(&a)))
 }
+
+/// DELETE /assets/:id – delete asset and all its transactions.
+pub async fn delete(
+    State(state): State<AppState>,
+    ctx: UserContext,
+    Path(id): Path<String>,
+) -> Result<StatusCode, AppError> {
+    let oid = ObjectId::parse_str(&id).map_err(|_| AppError::bad_request())?;
+    let _ = repository::asset::get_by_id(state.db.as_ref(), ctx.user_id, oid)
+        .await
+        .map_err(AppError::internal)?
+        .ok_or(AppError::not_found())?;
+    let _ = repository::transaction::delete_by_asset(state.db.as_ref(), ctx.user_id, oid)
+        .await
+        .map_err(AppError::internal)?;
+    let deleted = repository::asset::delete(state.db.as_ref(), ctx.user_id, oid)
+        .await
+        .map_err(AppError::internal)?;
+    if deleted {
+        Ok(StatusCode::NO_CONTENT)
+    } else {
+        Err(AppError::not_found())
+    }
+}

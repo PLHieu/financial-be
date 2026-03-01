@@ -120,5 +120,103 @@ pub async fn create_indexes(db: &Database) -> Result<(), mongodb::error::Error> 
         )
         .await?;
 
+    // debts
+    db.collection::<mongodb::bson::Document>("debts")
+        .create_index(
+            IndexModel::builder().keys(doc! { "user_id": 1 }).build(),
+        )
+        .await?;
+    db.collection::<mongodb::bson::Document>("debts")
+        .create_index(
+            IndexModel::builder().keys(doc! { "portfolio_id": 1 }).build(),
+        )
+        .await?;
+
+    // debt_transactions (debtId is camelCase in BSON due to serde rename)
+    db.collection::<mongodb::bson::Document>("debt_transactions")
+        .create_index(
+            IndexModel::builder().keys(doc! { "user_id": 1 }).build(),
+        )
+        .await?;
+    db.collection::<mongodb::bson::Document>("debt_transactions")
+        .create_index(
+            IndexModel::builder().keys(doc! { "debtId": 1, "date": 1 }).build(),
+        )
+        .await?;
+
+    // loans
+    db.collection::<mongodb::bson::Document>("loans")
+        .create_index(
+            IndexModel::builder().keys(doc! { "user_id": 1 }).build(),
+        )
+        .await?;
+    db.collection::<mongodb::bson::Document>("loans")
+        .create_index(
+            IndexModel::builder().keys(doc! { "portfolio_id": 1 }).build(),
+        )
+        .await?;
+
+    // loan_transactions
+    db.collection::<mongodb::bson::Document>("loan_transactions")
+        .create_index(
+            IndexModel::builder().keys(doc! { "user_id": 1 }).build(),
+        )
+        .await?;
+    db.collection::<mongodb::bson::Document>("loan_transactions")
+        .create_index(
+            IndexModel::builder().keys(doc! { "loanId": 1, "date": 1 }).build(),
+        )
+        .await?;
+
+    // funds
+    db.collection::<mongodb::bson::Document>("funds")
+        .create_index(
+            IndexModel::builder().keys(doc! { "user_id": 1 }).build(),
+        )
+        .await?;
+    db.collection::<mongodb::bson::Document>("funds")
+        .create_index(
+            IndexModel::builder().keys(doc! { "portfolio_id": 1 }).build(),
+        )
+        .await?;
+
+    // fund_transactions
+    db.collection::<mongodb::bson::Document>("fund_transactions")
+        .create_index(
+            IndexModel::builder().keys(doc! { "user_id": 1 }).build(),
+        )
+        .await?;
+    db.collection::<mongodb::bson::Document>("fund_transactions")
+        .create_index(
+            IndexModel::builder().keys(doc! { "fundId": 1, "date": 1 }).build(),
+        )
+        .await?;
+
+    // depreciating_items
+    db.collection::<mongodb::bson::Document>("depreciating_items")
+        .create_index(
+            IndexModel::builder().keys(doc! { "user_id": 1 }).build(),
+        )
+        .await?;
+    db.collection::<mongodb::bson::Document>("depreciating_items")
+        .create_index(
+            IndexModel::builder().keys(doc! { "portfolio_id": 1 }).build(),
+        )
+        .await?;
+
+    // depreciating_item_transactions (depreciatingItemId is camelCase in BSON)
+    db.collection::<mongodb::bson::Document>("depreciating_item_transactions")
+        .create_index(
+            IndexModel::builder().keys(doc! { "user_id": 1 }).build(),
+        )
+        .await?;
+    db.collection::<mongodb::bson::Document>("depreciating_item_transactions")
+        .create_index(
+            IndexModel::builder()
+                .keys(doc! { "depreciatingItemId": 1, "date": 1 })
+                .build(),
+        )
+        .await?;
+
     Ok(())
 }

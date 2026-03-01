@@ -2,14 +2,20 @@
 
 use crate::convert;
 use crate::models::{
-    Asset, AssetPriceHistory, CoinPriceHistory, ExchangeRate, NetWorthSnapshot, Portfolio,
-    PortfolioSnapshot, Transaction, TransferTransaction,
+    Asset, AssetPriceHistory, CoinPriceHistory, Debt, DebtTransaction, DepreciatingItem,
+    DepreciatingItemTransaction, ExchangeRate, Fund, FundTransaction, Loan, LoanTransaction,
+    NetWorthSnapshot, Portfolio, PortfolioSnapshot, Transaction, TransferTransaction,
 };
 use crate::models::{
-    AssetDto, AssetPriceHistoryDto, CoinPriceHistoryDto, ExchangeRateDto, NetWorthSnapshotDto,
-    PortfolioDto, PortfolioSnapshotDto, TransactionDto, TransferTransactionDto,
+    AssetDto, AssetPriceHistoryDto, CoinPriceHistoryDto, DebtDto, DebtTransactionDto,
+    DepreciatingItemDto, DepreciatingItemTransactionDto, ExchangeRateDto, FundDto,
+    FundTransactionDto, LoanDto, LoanTransactionDto, NetWorthSnapshotDto, PortfolioDto,
+    PortfolioSnapshotDto, TransactionDto, TransferTransactionDto,
 };
-use crate::models::{AssetStatus, AssetType, Currency, PortfolioType, TransactionType};
+use crate::models::{
+    AssetStatus, AssetType, Currency, DebtTransactionType, DepreciatingItemTransactionType,
+    FundTransactionType, LoanTransactionType, PortfolioType, TransactionType,
+};
 
 fn portfolio_type_str(t: &PortfolioType) -> &'static str {
     match t {
@@ -32,6 +38,7 @@ fn asset_type_str(t: &AssetType) -> &'static str {
         AssetType::Cash => "Cash",
         AssetType::ManualAsset => "Manual Asset",
         AssetType::TietKiemLinhHoat => "Tiết kiệm linh hoạt",
+        AssetType::DepreciatingAsset => "Depreciating Asset",
     }
 }
 
@@ -48,6 +55,20 @@ fn transaction_type_str(t: &TransactionType) -> &'static str {
         TransactionType::Sell => "Sell",
         TransactionType::Deposit => "Deposit",
         TransactionType::Withdraw => "Withdraw",
+    }
+}
+
+fn debt_transaction_type_str(t: &DebtTransactionType) -> &'static str {
+    match t {
+        DebtTransactionType::Borrow => "Borrow",
+        DebtTransactionType::Repay => "Repay",
+    }
+}
+
+fn loan_transaction_type_str(t: &LoanTransactionType) -> &'static str {
+    match t {
+        LoanTransactionType::Lend => "Lend",
+        LoanTransactionType::Repay => "Repay",
     }
 }
 
@@ -164,5 +185,130 @@ pub fn coin_price_history_to_dto(r: &CoinPriceHistory) -> CoinPriceHistoryDto {
         price: r.price,
         currency: r.currency.clone(),
         created_at: convert::bson_dt_to_rfc3339(&r.created_at),
+    }
+}
+
+pub fn debt_to_dto(d: &Debt) -> DebtDto {
+    DebtDto {
+        id: d.id.as_ref().map(|id| id.to_hex()).unwrap_or_default(),
+        portfolio_id: d.portfolio_id.map(|id| id.to_hex()),
+        name: d.name.clone(),
+        currency: currency_str(&d.currency).to_string(),
+        status: asset_status_str(&d.status).to_string(),
+        metadata: d.metadata.clone(),
+        created_at: convert::bson_dt_to_rfc3339(&d.created_at),
+        updated_at: convert::bson_dt_to_rfc3339(&d.updated_at),
+    }
+}
+
+pub fn debt_transaction_to_dto(t: &DebtTransaction) -> DebtTransactionDto {
+    DebtTransactionDto {
+        id: t.id.as_ref().map(|id| id.to_hex()).unwrap_or_default(),
+        debt_id: t.debt_id.to_hex(),
+        r#type: debt_transaction_type_str(&t.r#type).to_string(),
+        amount: t.amount,
+        date: convert::bson_dt_to_rfc3339(&t.date),
+        note: t.note.clone(),
+        created_at: convert::bson_dt_to_rfc3339(&t.created_at),
+        updated_at: convert::bson_dt_to_rfc3339(&t.updated_at),
+    }
+}
+
+pub fn loan_to_dto(l: &Loan) -> LoanDto {
+    LoanDto {
+        id: l.id.as_ref().map(|id| id.to_hex()).unwrap_or_default(),
+        portfolio_id: l.portfolio_id.map(|id| id.to_hex()),
+        name: l.name.clone(),
+        currency: currency_str(&l.currency).to_string(),
+        status: asset_status_str(&l.status).to_string(),
+        metadata: l.metadata.clone(),
+        created_at: convert::bson_dt_to_rfc3339(&l.created_at),
+        updated_at: convert::bson_dt_to_rfc3339(&l.updated_at),
+    }
+}
+
+pub fn loan_transaction_to_dto(t: &LoanTransaction) -> LoanTransactionDto {
+    LoanTransactionDto {
+        id: t.id.as_ref().map(|id| id.to_hex()).unwrap_or_default(),
+        loan_id: t.loan_id.to_hex(),
+        r#type: loan_transaction_type_str(&t.r#type).to_string(),
+        amount: t.amount,
+        date: convert::bson_dt_to_rfc3339(&t.date),
+        note: t.note.clone(),
+        created_at: convert::bson_dt_to_rfc3339(&t.created_at),
+        updated_at: convert::bson_dt_to_rfc3339(&t.updated_at),
+    }
+}
+
+fn fund_transaction_type_str(t: &FundTransactionType) -> &'static str {
+    match t {
+        FundTransactionType::Deposit => "Deposit",
+        FundTransactionType::Withdraw => "Withdraw",
+    }
+}
+
+pub fn fund_to_dto(f: &Fund) -> FundDto {
+    FundDto {
+        id: f.id.as_ref().map(|id| id.to_hex()).unwrap_or_default(),
+        portfolio_id: f.portfolio_id.map(|id| id.to_hex()),
+        name: f.name.clone(),
+        currency: currency_str(&f.currency).to_string(),
+        fund_type: f.fund_type.clone(),
+        start_date: f.start_date.clone(),
+        status: asset_status_str(&f.status).to_string(),
+        metadata: f.metadata.clone(),
+        inflation_rate: f.inflation_rate,
+        created_at: convert::bson_dt_to_rfc3339(&f.created_at),
+        updated_at: convert::bson_dt_to_rfc3339(&f.updated_at),
+    }
+}
+
+pub fn fund_transaction_to_dto(t: &FundTransaction) -> FundTransactionDto {
+    FundTransactionDto {
+        id: t.id.as_ref().map(|id| id.to_hex()).unwrap_or_default(),
+        fund_id: t.fund_id.to_hex(),
+        r#type: fund_transaction_type_str(&t.r#type).to_string(),
+        amount: t.amount,
+        date: convert::bson_dt_to_rfc3339(&t.date),
+        note: t.note.clone(),
+        created_at: convert::bson_dt_to_rfc3339(&t.created_at),
+        updated_at: convert::bson_dt_to_rfc3339(&t.updated_at),
+    }
+}
+
+fn depreciating_item_transaction_type_str(t: &DepreciatingItemTransactionType) -> &'static str {
+    match t {
+        DepreciatingItemTransactionType::Deposit => "Deposit",
+        DepreciatingItemTransactionType::Withdraw => "Withdraw",
+    }
+}
+
+pub fn depreciating_item_to_dto(i: &DepreciatingItem) -> DepreciatingItemDto {
+    DepreciatingItemDto {
+        id: i.id.as_ref().map(|id| id.to_hex()).unwrap_or_default(),
+        portfolio_id: i.portfolio_id.map(|id| id.to_hex()),
+        name: i.name.clone(),
+        currency: currency_str(&i.currency).to_string(),
+        purchase_date: i.purchase_date.clone(),
+        depreciation_curve: i.depreciation_curve.clone(),
+        status: asset_status_str(&i.status).to_string(),
+        metadata: i.metadata.clone(),
+        created_at: convert::bson_dt_to_rfc3339(&i.created_at),
+        updated_at: convert::bson_dt_to_rfc3339(&i.updated_at),
+    }
+}
+
+pub fn depreciating_item_transaction_to_dto(
+    t: &DepreciatingItemTransaction,
+) -> DepreciatingItemTransactionDto {
+    DepreciatingItemTransactionDto {
+        id: t.id.as_ref().map(|id| id.to_hex()).unwrap_or_default(),
+        depreciating_item_id: t.depreciating_item_id.to_hex(),
+        r#type: depreciating_item_transaction_type_str(&t.r#type).to_string(),
+        amount: t.amount,
+        date: convert::bson_dt_to_rfc3339(&t.date),
+        note: t.note.clone(),
+        created_at: convert::bson_dt_to_rfc3339(&t.created_at),
+        updated_at: convert::bson_dt_to_rfc3339(&t.updated_at),
     }
 }

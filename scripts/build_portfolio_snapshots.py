@@ -134,8 +134,8 @@ def run(
     def usd_to_base(usd_value: float, base_currency: str, at_date: datetime) -> float:
         if (base_currency or "").upper() != "VND":
             return usd_value
-        rate = get_price_for_date(usd_to_vnd, at_date) if usd_to_vnd else 25000.0
-        return usd_value * (rate or 25000.0)
+        rate = get_price_for_date(usd_to_vnd, at_date) if usd_to_vnd else 26000.0
+        return usd_value * (rate or 26000.0)
 
     now = datetime.now(timezone.utc)
     total_upserted = 0

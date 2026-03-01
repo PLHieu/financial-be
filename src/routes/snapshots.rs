@@ -1,6 +1,5 @@
 use axum::{
     extract::{Query, State},
-    http::StatusCode,
     Json,
 };
 
@@ -8,9 +7,22 @@ use crate::context::UserContext;
 use crate::convert;
 use crate::error::AppError;
 use crate::models::{NetWorthSnapshot, UpsertNetWorthSnapshotRequest};
+use crate::performance;
 use crate::repository;
 use crate::routes::dto;
 use crate::state::AppState;
+
+#[derive(serde::Deserialize)]
+pub struct NetWorthPerformanceQuery {
+    pub from_date: String,
+    pub to_date: String,
+    #[serde(default = "default_base_currency")]
+    pub base_currency: String,
+}
+
+fn default_base_currency() -> String {
+    "VND".to_string()
+}
 
 #[derive(serde::Deserialize)]
 pub struct TimeRangeQuery {
@@ -64,4 +76,21 @@ pub async fn list_net_worth(
         .map_err(AppError::internal)?;
     let dtos: Vec<_> = list.iter().map(dto::net_worth_snapshot_to_dto).collect();
     Ok(Json(dtos))
+}
+
+/// GET /net-worth/performance?from_date=&to_date=&base_currency=
+pub async fn net_worth_performance(
+    State(state): State<AppState>,
+    ctx: UserContext,
+    Query(q): Query<NetWorthPerformanceQuery>,
+) -> Result<Json<crate::models::PerformanceResponseDto>, AppError> {
+    let out = performance::net_worth_performance(
+        &state.db,
+        ctx.user_id,
+        &q.from_date,
+        &q.to_date,
+        &q.base_currency,
+    )
+    .await?;
+    Ok(Json(out))
 }

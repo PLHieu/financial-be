@@ -48,3 +48,25 @@ pub async fn get_by_asset(
     }
     Ok(out)
 }
+
+/// Fetch all asset price history with date >= start_date, sorted by date asc.
+/// Used by snapshot computation to avoid N+1 queries per asset.
+pub async fn get_all_since(
+    db: &Database,
+    start_date: mongodb::bson::DateTime,
+) -> Result<Vec<AssetPriceHistory>, String> {
+    let coll = db.collection::<mongodb::bson::Document>("asset_price_history");
+    let filter = doc! { "date": { "$gte": start_date } };
+    let mut cursor = coll
+        .find(filter)
+        .sort(doc! { "date": 1 })
+        .await
+        .map_err(|e| e.to_string())?;
+    let mut out = Vec::new();
+    while cursor.advance().await.map_err(|e| e.to_string())? {
+        let doc = cursor.deserialize_current().map_err(|e| e.to_string())?;
+        let r: AssetPriceHistory = from_document(doc).map_err(|e| e.to_string())?;
+        out.push(r);
+    }
+    Ok(out)
+}

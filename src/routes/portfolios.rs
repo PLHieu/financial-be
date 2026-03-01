@@ -1,5 +1,5 @@
 use axum::{
-    extract::{Path, State},
+    extract::{Path, Query, State},
     http::StatusCode,
     Json,
 };
@@ -9,9 +9,16 @@ use crate::context::UserContext;
 use crate::convert;
 use crate::error::AppError;
 use crate::models::{CreatePortfolioRequest, Portfolio};
+use crate::performance;
 use crate::repository;
 use crate::routes::{dto, parse};
 use crate::state::AppState;
+
+#[derive(serde::Deserialize)]
+pub struct PerformanceQuery {
+    pub from_date: String,
+    pub to_date: String,
+}
 
 pub async fn list(State(state): State<AppState>, ctx: UserContext) -> Result<Json<Vec<crate::models::PortfolioDto>>, AppError> {
     let list = repository::portfolio::get_all(&state.db, ctx.user_id).await.map_err(AppError::internal)?;
@@ -102,4 +109,16 @@ pub async fn delete(State(state): State<AppState>, ctx: UserContext, Path(id): P
     } else {
         Err(AppError::not_found())
     }
+}
+
+/// GET /portfolios/:id/performance?from_date=&to_date=
+pub async fn performance(
+    State(state): State<AppState>,
+    ctx: UserContext,
+    Path(id): Path<String>,
+    Query(q): Query<PerformanceQuery>,
+) -> Result<Json<crate::models::PerformanceResponseDto>, AppError> {
+    let oid = ObjectId::parse_str(&id).map_err(|_| AppError::bad_request())?;
+    let out = performance::portfolio_performance(&state.db, ctx.user_id, oid, &q.from_date, &q.to_date).await?;
+    Ok(Json(out))
 }

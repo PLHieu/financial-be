@@ -34,6 +34,8 @@ pub enum AssetType {
     ManualAsset,
     #[serde(rename = "Tiết kiệm linh hoạt")]
     TietKiemLinhHoat,
+    #[serde(rename = "Depreciating Asset")]
+    DepreciatingAsset,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -68,6 +70,13 @@ pub struct Portfolio {
     pub color: Option<String>,
     pub created_at: BsonDateTime,
     pub updated_at: BsonDateTime,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DepreciationCurveYear {
+    pub year: u32,
+    #[serde(rename = "ratePercent")]
+    pub rate_percent: f64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -194,6 +203,174 @@ pub struct ExchangeRate {
     pub created_at: BsonDateTime,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum DebtTransactionType {
+    Borrow,
+    Repay,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Debt {
+    #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
+    pub id: Option<ObjectId>,
+    pub user_id: ObjectId,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub portfolio_id: Option<ObjectId>,
+    pub name: String,
+    pub currency: Currency,
+    pub status: AssetStatus,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub metadata: Option<serde_json::Value>,
+    pub created_at: BsonDateTime,
+    pub updated_at: BsonDateTime,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DebtTransaction {
+    #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
+    pub id: Option<ObjectId>,
+    pub user_id: ObjectId,
+    #[serde(rename = "debtId")]
+    pub debt_id: ObjectId,
+    pub r#type: DebtTransactionType,
+    pub amount: f64,
+    pub date: BsonDateTime,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub note: Option<String>,
+    pub created_at: BsonDateTime,
+    pub updated_at: BsonDateTime,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum LoanTransactionType {
+    Lend,
+    Repay,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Loan {
+    #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
+    pub id: Option<ObjectId>,
+    pub user_id: ObjectId,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub portfolio_id: Option<ObjectId>,
+    pub name: String,
+    pub currency: Currency,
+    pub status: AssetStatus,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub metadata: Option<serde_json::Value>,
+    pub created_at: BsonDateTime,
+    pub updated_at: BsonDateTime,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LoanTransaction {
+    #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
+    pub id: Option<ObjectId>,
+    pub user_id: ObjectId,
+    #[serde(rename = "loanId")]
+    pub loan_id: ObjectId,
+    pub r#type: LoanTransactionType,
+    pub amount: f64,
+    pub date: BsonDateTime,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub note: Option<String>,
+    pub created_at: BsonDateTime,
+    pub updated_at: BsonDateTime,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum FundTransactionType {
+    Deposit,
+    Withdraw,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Fund {
+    #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
+    pub id: Option<ObjectId>,
+    pub user_id: ObjectId,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub portfolio_id: Option<ObjectId>,
+    pub name: String,
+    pub currency: Currency,
+    #[serde(rename = "fundType")]
+    pub fund_type: String,
+    #[serde(rename = "startDate")]
+    pub start_date: Option<String>,
+    pub status: AssetStatus,
+    /// Interest rate % per year, or interest_rate_periods for flexible savings style.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub metadata: Option<serde_json::Value>,
+    /// Inflation rate % per year when fund has no interest (user-entered at creation).
+    #[serde(rename = "inflationRate", skip_serializing_if = "Option::is_none")]
+    pub inflation_rate: Option<f64>,
+    pub created_at: BsonDateTime,
+    pub updated_at: BsonDateTime,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FundTransaction {
+    #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
+    pub id: Option<ObjectId>,
+    pub user_id: ObjectId,
+    #[serde(rename = "fundId")]
+    pub fund_id: ObjectId,
+    pub r#type: FundTransactionType,
+    pub amount: f64,
+    pub date: BsonDateTime,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub note: Option<String>,
+    pub created_at: BsonDateTime,
+    pub updated_at: BsonDateTime,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum DepreciatingItemTransactionType {
+    Deposit,
+    Withdraw,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DepreciatingItem {
+    #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
+    pub id: Option<ObjectId>,
+    pub user_id: ObjectId,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub portfolio_id: Option<ObjectId>,
+    pub name: String,
+    pub currency: Currency,
+    #[serde(rename = "purchaseDate")]
+    pub purchase_date: String,
+    #[serde(rename = "depreciationCurve")]
+    pub depreciation_curve: Vec<DepreciationCurveYear>,
+    pub status: AssetStatus,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub metadata: Option<serde_json::Value>,
+    pub created_at: BsonDateTime,
+    pub updated_at: BsonDateTime,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DepreciatingItemTransaction {
+    #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
+    pub id: Option<ObjectId>,
+    pub user_id: ObjectId,
+    #[serde(rename = "depreciatingItemId")]
+    pub depreciating_item_id: ObjectId,
+    pub r#type: DepreciatingItemTransactionType,
+    pub amount: f64,
+    pub date: BsonDateTime,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub note: Option<String>,
+    pub created_at: BsonDateTime,
+    pub updated_at: BsonDateTime,
+}
+
 /// Price history by CoinGecko coin id. Used as cache from CoinGecko API.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CoinPriceHistory {
@@ -273,6 +450,23 @@ pub struct PortfolioSnapshotDto {
     pub created_at: String,
 }
 
+/// One point in a performance series (date, value). Used for both cumulative capital and current value.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PerformanceSeriesPoint {
+    pub date: String,
+    pub value: f64,
+}
+
+/// Response for performance and net-worth performance APIs: two series + currency.
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PerformanceResponseDto {
+    pub cumulative_capital_series: Vec<PerformanceSeriesPoint>,
+    pub current_value_series: Vec<PerformanceSeriesPoint>,
+    pub currency: String,
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AssetPriceHistoryDto {
@@ -310,6 +504,115 @@ pub struct ExchangeRateDto {
     pub date: String,
     pub source: Option<String>,
     pub created_at: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DebtDto {
+    pub id: String,
+    pub portfolio_id: Option<String>,
+    pub name: String,
+    pub currency: String,
+    pub status: String,
+    pub metadata: Option<serde_json::Value>,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DebtTransactionDto {
+    pub id: String,
+    pub debt_id: String,
+    pub r#type: String,
+    pub amount: f64,
+    pub date: String,
+    pub note: Option<String>,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LoanDto {
+    pub id: String,
+    pub portfolio_id: Option<String>,
+    pub name: String,
+    pub currency: String,
+    pub status: String,
+    pub metadata: Option<serde_json::Value>,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LoanTransactionDto {
+    pub id: String,
+    pub loan_id: String,
+    pub r#type: String,
+    pub amount: f64,
+    pub date: String,
+    pub note: Option<String>,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FundDto {
+    pub id: String,
+    pub portfolio_id: Option<String>,
+    pub name: String,
+    pub currency: String,
+    pub fund_type: String,
+    pub start_date: Option<String>,
+    pub status: String,
+    pub metadata: Option<serde_json::Value>,
+    pub inflation_rate: Option<f64>,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FundTransactionDto {
+    pub id: String,
+    pub fund_id: String,
+    pub r#type: String,
+    pub amount: f64,
+    pub date: String,
+    pub note: Option<String>,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DepreciatingItemDto {
+    pub id: String,
+    pub portfolio_id: Option<String>,
+    pub name: String,
+    pub currency: String,
+    pub purchase_date: String,
+    pub depreciation_curve: Vec<DepreciationCurveYear>,
+    pub status: String,
+    pub metadata: Option<serde_json::Value>,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DepreciatingItemTransactionDto {
+    pub id: String,
+    pub depreciating_item_id: String,
+    pub r#type: String,
+    pub amount: f64,
+    pub date: String,
+    pub note: Option<String>,
+    pub created_at: String,
+    pub updated_at: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -440,4 +743,81 @@ pub struct CreateExchangeRateRequest {
     pub rate: f64,
     pub date: String,
     pub source: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateDebtRequest {
+    pub portfolio_id: Option<String>,
+    pub name: String,
+    pub currency: String,
+    pub metadata: Option<serde_json::Value>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateDebtTransactionRequest {
+    pub r#type: String,
+    pub amount: f64,
+    pub date: String,
+    pub note: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateLoanRequest {
+    pub portfolio_id: Option<String>,
+    pub name: String,
+    pub currency: String,
+    pub metadata: Option<serde_json::Value>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateLoanTransactionRequest {
+    pub r#type: String,
+    pub amount: f64,
+    pub date: String,
+    pub note: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateFundRequest {
+    pub portfolio_id: Option<String>,
+    pub name: String,
+    pub currency: String,
+    pub fund_type: String,
+    pub start_date: Option<String>,
+    pub metadata: Option<serde_json::Value>,
+    pub inflation_rate: Option<f64>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateFundTransactionRequest {
+    pub r#type: String,
+    pub amount: f64,
+    pub date: String,
+    pub note: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateDepreciatingItemRequest {
+    pub portfolio_id: Option<String>,
+    pub name: String,
+    pub currency: String,
+    pub purchase_date: String,
+    pub depreciation_curve: Vec<DepreciationCurveYear>,
+    pub metadata: Option<serde_json::Value>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateDepreciatingItemTransactionRequest {
+    pub r#type: String,
+    pub amount: f64,
+    pub date: String,
+    pub note: Option<String>,
 }

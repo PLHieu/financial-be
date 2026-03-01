@@ -74,9 +74,7 @@ pub async fn list(
         .as_ref()
         .and_then(|s| ObjectId::parse_str(s).ok());
     let start = q.time_range.as_deref().and_then(start_date_for_time_range);
-    let list = repository::portfolio_snapshot::get_by_time_range(&state.db, ctx.user_id, portfolio_id, start)
-        .await
-        .map_err(AppError::internal)?;
-    let dtos: Vec<_> = list.iter().map(dto::portfolio_snapshot_to_dto).collect();
+    let dtos = crate::snapshot::compute_portfolio_snapshots(&state.db, ctx.user_id, portfolio_id, start)
+        .await?;
     Ok(Json(dtos))
 }
